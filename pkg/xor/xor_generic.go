@@ -67,4 +67,3 @@ func safeXORBytes(dst, a, b []byte, n int) {
 		dst[i] = a[i] ^ b[i]
 	}
 }
-

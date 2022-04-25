@@ -1,7 +1,6 @@
 package xorcontacts
 
 import (
-	"crypto/md5"
 	"crypto/rand"
 	"github.com/itsabgr/go-handy"
 	"io"
@@ -12,14 +11,10 @@ import (
 
 type Peer []byte
 
-func (p Peer) UUID() []byte {
+func (p Peer) ID() []byte {
 	return p
 }
 
-func (p Peer) Hash() []byte {
-	h := md5.Sum(p)
-	return h[:]
-}
 func RandomPeer() Peer {
 	b := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, b)
@@ -34,7 +29,7 @@ func TestList(t *testing.T) {
 			t.Fatal()
 		}
 	}
-	sort.Sort(list.Xor(RandomPeer()))
+	sort.Sort(list.xor(RandomPeer()))
 }
 func TestList_GC(t *testing.T) {
 	list := List[Peer]{}

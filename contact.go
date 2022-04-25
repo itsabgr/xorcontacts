@@ -6,8 +6,7 @@ import (
 )
 
 type Contact interface {
-	UUID() []byte
-	Hash() []byte
+	ID() []byte
 }
 
 type contact[C Contact] struct {
@@ -16,7 +15,7 @@ type contact[C Contact] struct {
 }
 
 func (c *contact[C]) Compare(another *contact[C]) int {
-	return bytes.Compare(c.wrapped.UUID(), another.wrapped.UUID())
+	return bytes.Compare(c.wrapped.ID(), another.wrapped.ID())
 }
 func (c *contact[C]) Expired() bool {
 	return !c.deadline.After(time.Now())

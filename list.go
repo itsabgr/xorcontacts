@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/itsabgr/go-set"
+	"sort"
 	"time"
 )
 
@@ -45,9 +46,10 @@ func (l *List[C]) Remove(peer C) error {
 func (l *List[C]) GC() error {
 	var todo []*contact[C]
 	for iter := l.set.Iter(); iter.HasNext(); iter.Next() {
-		if false == iter.Item().deadline.After(time.Now()) {
-			todo = append(todo, iter.Item())
+		if !iter.Item().Expired() {
+			continue
 		}
+		todo = append(todo, iter.Item())
 	}
 	for _, item := range todo {
 		l.set.Remove(item)
@@ -88,7 +90,7 @@ func (l listPeerWithXor[C]) Slice(s, e int) listPeerWithXor[C] {
 }
 
 func (l listPeerWithXor[C]) Less(i, j int) bool {
-	return bytes.Compare(l[i].peer.UUID(), l[j].peer.UUID()) < 0
+	return bytes.Compare(l[i].xor, l[j].xor) < 0
 }
 
 func (l listPeerWithXor[C]) Swap(i, j int) {
@@ -97,12 +99,23 @@ func (l listPeerWithXor[C]) Swap(i, j int) {
 	l[j] = item
 }
 
-func (l *List[C]) Xor(peer C) listPeerWithXor[C] {
-	target := peer.Hash()
+func (l *List[C]) xor(peer C) listPeerWithXor[C] {
+	target := hash(peer.ID())
 	result := make(listPeerWithXor[C], 0, l.set.Len())
 	for iter := l.set.Iter(); iter.HasNext(); iter.Next() {
-
-		result = append(result, peerWithXor[C]{peer: iter.Item().wrapped, xor: xor(target, iter.Item().wrapped.Hash())})
+		if iter.Item().Expired() {
+			continue
+		}
+		result = append(result, peerWithXor[C]{peer: iter.Item().wrapped, xor: xor(target, hash(iter.Item().wrapped.ID()))})
+	}
+	return result
+}
+func (l *List[C]) Xor(peer C) []C {
+	list := l.xor(peer)
+	sort.Sort(list)
+	result := make([]C, 0, len(list))
+	for _, item := range list {
+		result = append(result, item.peer)
 	}
 	return result
 }
