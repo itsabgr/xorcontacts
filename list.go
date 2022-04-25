@@ -42,7 +42,7 @@ func (l *List[C]) Remove(peer C) error {
 	}
 	return nil
 }
-func (l *List[C]) GC() {
+func (l *List[C]) GC() error {
 	var todo []*contact[C]
 	for iter := l.set.Iter(); iter.HasNext(); iter.Next() {
 		if false == iter.Item().deadline.After(time.Now()) {
@@ -52,6 +52,7 @@ func (l *List[C]) GC() {
 	for _, item := range todo {
 		l.set.Remove(item)
 	}
+	return nil
 }
 
 func (l *List[C]) Has(peer C) bool {
@@ -60,47 +61,48 @@ func (l *List[C]) Has(peer C) bool {
 func (l *List[C]) Len() int {
 	return l.set.Len()
 }
-func (l *List[C]) List() set.Set[*contact[C]] {
-	return l.set
+func (l *List[C]) List() *set.Set[*contact[C]] {
+	return &l.set
 }
 
-type PeerWithXor[C Contact] struct {
+type peerWithXor[C Contact] struct {
 	peer C
 	xor  []byte
 }
 
-func (p *PeerWithXor[C]) Peer() C {
+func (p *peerWithXor[C]) Peer() C {
 	return p.peer
 }
 
-func (p *PeerWithXor[C]) Xor() []byte {
+func (p *peerWithXor[C]) Xor() []byte {
 	return p.xor
 }
 
-type ListPeerWithXor[C Contact] []PeerWithXor[C]
+type listPeerWithXor[C Contact] []peerWithXor[C]
 
-func (l ListPeerWithXor[C]) Len() int {
+func (l listPeerWithXor[C]) Len() int {
 	return len(l)
 }
-func (l ListPeerWithXor[C]) Slice(s, e int) ListPeerWithXor[C] {
+func (l listPeerWithXor[C]) Slice(s, e int) listPeerWithXor[C] {
 	return l[s:e]
 }
 
-func (l ListPeerWithXor[C]) Less(i, j int) bool {
+func (l listPeerWithXor[C]) Less(i, j int) bool {
 	return bytes.Compare(l[i].peer.UUID(), l[j].peer.UUID()) < 0
 }
 
-func (l ListPeerWithXor[C]) Swap(i, j int) {
+func (l listPeerWithXor[C]) Swap(i, j int) {
 	item := l[i]
 	l[i] = l[j]
 	l[j] = item
 }
 
-func (l *List[C]) Xor(peer C) ListPeerWithXor[C] {
+func (l *List[C]) Xor(peer C) listPeerWithXor[C] {
 	target := peer.Hash()
-	result := make(ListPeerWithXor[C], 0, l.set.Len())
+	result := make(listPeerWithXor[C], 0, l.set.Len())
 	for iter := l.set.Iter(); iter.HasNext(); iter.Next() {
-		result = append(result, PeerWithXor[C]{peer: iter.Item().wrapped, xor: xor(target, iter.Item().wrapped.Hash())})
+
+		result = append(result, peerWithXor[C]{peer: iter.Item().wrapped, xor: xor(target, iter.Item().wrapped.Hash())})
 	}
 	return result
 }

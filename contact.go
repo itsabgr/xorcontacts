@@ -18,3 +18,6 @@ type contact[C Contact] struct {
 func (c *contact[C]) Compare(another *contact[C]) int {
 	return bytes.Compare(c.wrapped.UUID(), another.wrapped.UUID())
 }
+func (c *contact[C]) Expired() bool {
+	return !c.deadline.After(time.Now())
+}
