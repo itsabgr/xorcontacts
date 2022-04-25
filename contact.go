@@ -8,6 +8,11 @@ import (
 type Contact interface {
 	ID() []byte
 }
+type Bytes []byte
+
+func (b Bytes) ID() []byte {
+	return b
+}
 
 type contact[C Contact] struct {
 	wrapped  C

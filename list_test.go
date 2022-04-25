@@ -9,13 +9,7 @@ import (
 	"time"
 )
 
-type Peer []byte
-
-func (p Peer) ID() []byte {
-	return p
-}
-
-func RandomPeer() Peer {
+func RandomPeer() Bytes {
 	b := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, b)
 	handy.Throw(err)
@@ -23,7 +17,7 @@ func RandomPeer() Peer {
 }
 
 func TestList(t *testing.T) {
-	list := List[Peer]{}
+	list := List[Bytes]{}
 	for range handy.N(100) {
 		if nil != list.Add(RandomPeer(), time.Now().Add(1*time.Hour)) {
 			t.Fatal()
@@ -32,7 +26,7 @@ func TestList(t *testing.T) {
 	sort.Sort(list.xor(RandomPeer()))
 }
 func TestList_GC(t *testing.T) {
-	list := List[Peer]{}
+	list := List[Bytes]{}
 	dl := time.Now().Add(3 * time.Second)
 	for range handy.N(100) {
 		if nil != list.Add(RandomPeer(), dl) {
