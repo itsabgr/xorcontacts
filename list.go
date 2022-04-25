@@ -4,42 +4,39 @@ import (
 	"bytes"
 	"errors"
 	"github.com/itsabgr/go-set"
+	"go.uber.org/atomic"
 	"sort"
 	"time"
 )
 
 type List[C Contact] struct {
 	set set.Set[*contact[C]]
+	Cap atomic.Uint32
 }
 
-func (l *List[C]) Add(peer C, deadline time.Time) error {
-	if false == deadline.After(time.Now()) {
-		return errors.New("expired deadline")
+func (l *List[C]) Put(peer C, deadline time.Time) error {
+	err := l.GC()
+	if err != nil {
+		return err
 	}
-	if false == l.set.Add(&contact[C]{deadline: deadline, wrapped: peer}) {
-		return errors.New("exists")
+	if l.Has(peer) {
+		l.Remove(peer)
+		l.set.Add(&contact[C]{deadline: deadline, wrapped: peer})
+		return nil
 	}
+	if l.Cap.Load() < uint32(l.Len()) {
+		return ErrNoCap
+	}
+	l.set.Add(&contact[C]{deadline: deadline, wrapped: peer})
 	return nil
 }
-func (l *List[C]) Update(peer C, deadline time.Time) error {
-	if false == deadline.After(time.Now()) {
-		return errors.New("expired deadline")
-	}
-	if !l.set.Remove(&contact[C]{wrapped: peer}) {
-		return errors.New("not found")
-	}
-	return l.Add(peer, deadline)
-}
-func (l *List[C]) Upsert(peer C, deadline time.Time) error {
-	if false == deadline.After(time.Now()) {
-		return errors.New("expired deadline")
-	}
-	_ = l.set.Remove(&contact[C]{wrapped: peer})
-	return l.Add(peer, deadline)
-}
+
+var ErrNotFound = errors.New("xorcontacts: not found")
+var ErrNoCap = errors.New("xorcontacts: no cap")
+
 func (l *List[C]) Remove(peer C) error {
 	if false == l.set.Remove(&contact[C]{wrapped: peer}) {
-		return errors.New("not found")
+		return ErrNotFound
 	}
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 type Contact interface {
 	ID() []byte
 }
+
 type Bytes []byte
 
 func (b Bytes) ID() []byte {
@@ -22,6 +23,7 @@ type contact[C Contact] struct {
 func (c *contact[C]) Compare(another *contact[C]) int {
 	return bytes.Compare(c.wrapped.ID(), another.wrapped.ID())
 }
+
 func (c *contact[C]) Expired() bool {
 	return !c.deadline.After(time.Now())
 }
